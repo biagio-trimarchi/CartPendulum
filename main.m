@@ -6,10 +6,10 @@ clear all;
 addpath("./Functions")
 
 %% Simulation parameters
-dt = 0.001;                         % Time step
+dt = 0.01;                         % Time step
 step = cast(1/dt, 'uint32') / 10;   % Animation time step
-T = 10.0;                            % Total time
-x0 = [0, 0, pi, 1.5*0.3*pi];        % Initial condition
+T = 50.0;                            % Total time
+x0 = [0, 0, pi, 0];             % Initial condition
 tspan = 0:dt:T;                     % Time instants
 
 %% Plant parameters nominal
@@ -21,12 +21,12 @@ paramsN.k = 0.0;             % Elastic coefficient
 paramsN.c = 0.0;             % Friction force
 
 %% Plant paramters real
-paramsR.M = 12.0;            % Cart mass
-paramsR.m = 5.6;             % Pendulum mass
-paramsR.L = 3.8;             % Rod length
+paramsR.M = 11.0;            % Cart mass
+paramsR.m = 6.0;             % Pendulum mass
+paramsR.L = 4.0;             % Rod length
 paramsR.g = 9.81;            % Gravity acceleration
 paramsR.k = 0.0;             % Elastic coefficient
-paramsR.c = 0.2;             % Friction force
+paramsR.c = 0.0;             % Friction force
 
 %% Example simulation
 % u = @(t) feedForwardAction(t, params);
@@ -68,7 +68,7 @@ Ks = K(end);
 xx(:, 1) = x0;
 sigma(1) = 1/Ks * ( u_ff' - Kx * x_(3:4)' );
 for tt=1:length(tspan)-1
-    x(3, :) = wrapTo2Pi(xx(3, tt));
+    xx(3, tt) = wrapTo2Pi(xx(3, tt));
     u_ff = feedForwardAction(tspan(tt), paramsN);
     [y, dy, ~] = trajectory(tspan(tt));
     y = wrapTo2Pi(y);
@@ -88,19 +88,72 @@ for tt=1:length(tspan)-1
     if ( abs(pi/2 - aux) < 0.01 || abs(-pi/2 - aux) < 0.01 )
         u = u_ff;
     else
-        poles = [-4, -5, -2];
+        poles = [-7, -5, -2];
         K = place(AA, -BB, poles);
         Kx = K(1:2);
         Ks = K(end);
         u = Kx*(xx(3:4, tt)) + Ks*sigma(tt);
     end
     
-    xx(:, tt+1) = xx(:, tt) + dynamics(xx(:, tt), u, paramsR)*dt;
+    xx(:, tt+1) = xx(:, tt) + dynamics(xx(:, tt), u_ff, paramsR)*dt;
     sigma(tt+1) = sigma(tt) + (xx(3, tt) - y)*dt; 
 end
 
 xx = xx';
 
+%% Example steady state
+% xx(:, 1) = x0;
+% y = x0(3);
+% 
+% x_ = [0; 0; y; 0];
+% u_ff = uStar(y, paramsN);
+% A_ = A(x_, u_ff, paramsN);
+% B_ = B(x_, paramsN);
+% C_ = C();
+% B_ = B_(3:4);
+% A_ = A_(3:4, 3:4);
+% C_ = C_(3:4);
+% AA = [A_, zeros(2,1); C_, 0];
+% BB = [B_; 0];
+% poles = [-4, -5, -2];
+% K = place(AA, -BB, poles);
+% Kx = K(1:2);
+% Ks = K(end);
+% 
+% xx(:, 1) = x0;
+% sigma(1) = 1/Ks * ( u_ff' - Kx * x_(3:4) );
+% 
+% 
+% y = y - 0.001;
+% for tt=1:length(tspan)-1
+%     xx(3, tt) = wrapTo2Pi(xx(3, tt));
+%     u_ff = uStar(y, paramsN);
+%     x_ = [0; 0; y; 0];
+%     A_ = A(x_, u_ff, paramsN);
+%     B_ = B(x_, paramsN);
+%     C_ = C();
+%     B_ = B_(3:4);
+%     A_ = A_(3:4, 3:4);
+%     C_ = C_(3:4);
+%     
+%     AA = [A_, zeros(2,1); C_, 0];
+%     BB = [B_; 0];
+%     poles = [-7, -5, -2];
+%     K = place(AA, -BB, poles);
+%     Kx = K(1:2);
+%     Ks = K(end);
+%     u = Kx*(xx(3:4, tt)) + Ks*sigma(tt);
+% 
+%     xx(:, tt+1) = xx(:, tt) + dynamics(xx(:, tt), u, paramsR)*dt;
+%     sigma(tt+1) = sigma(tt) + (xx(3, tt) - y)*dt; 
+%     
+%     y = y - 0.01;
+%     if (y < 0)
+%         y = 0;
+%     end
+% end
+% 
+% xx = xx';
 
 %% Debug
 % x = [0.0; 0.0; -pi/2; 0];
@@ -131,7 +184,7 @@ xx = xx';
 fig = figure(1);
 for ii = 1:step:length(tspan)
     clf(fig)
-    xaxis([-10, 10])
+    xaxis([-10 + xx(ii,1), 10 + xx(ii,1)])
     yaxis([-10, 10])
     hold on
     plotCart(xx(ii, :), paramsR)
@@ -140,8 +193,8 @@ for ii = 1:step:length(tspan)
     drawnow
 end
 
-plot(yy)
-hold on
-plot(xx(:, 3))
-hold off
-legend('y', 'x')
+% plot(yy)
+% hold on
+% plot(xx(:, 3))
+% hold off
+% legend('y', 'x')
