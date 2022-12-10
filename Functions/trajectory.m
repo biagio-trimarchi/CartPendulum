@@ -3,19 +3,21 @@ function [y, dy, ddy] = trajectory(t)
         % _______________
         % t : time instant
         
+        T1 = 2.0;
+        T2 = 2.0;
+
         % Control points
         start = pi;
         medium = 5/4*pi;
         goal = 0;
-        P1 = [start; start; start; medium; medium+0.1; medium];
-        dP1 = diff(P1);
-        ddP1 = diff(dP1);
-        P2 = [medium; medium+0.1; medium; goal; goal; goal];
-        dP2 = diff(P2);
-        ddP2 = diff(dP2);
+        P1 = [start; start; start; medium; medium; medium];
+        dP1 = 5*diff(P1)/T1;
+        ddP1 = 4*diff(dP1)/T1;
+        P2 = [medium; medium; medium; goal; goal; goal];
+        dP2 = 5*diff(P2)/T2;
+        ddP2 = 4*diff(dP2)/T2;
 
-        T1 = 2.0;
-        T2 = 2.0;
+        
 
         if t < T1
             tau = t/T1;
